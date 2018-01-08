@@ -164,6 +164,9 @@ void DallasTemperature::readScratchPad(uint8_t* deviceAddress, uint8_t* scratchP
   // SCTRACHPAD_CRC
   scratchPad[SCRATCHPAD_CRC] = _wire->read();
 
+  for (uint8_t i=0; i<8; i++) {
+    //Serial.print("\n 0x"); Serial.print(scratchPad[i], HEX);
+  }
   _wire->reset();
 }
 
@@ -273,6 +276,9 @@ uint8_t DallasTemperature::getResolution(uint8_t* deviceAddress)
         return 9;
         
 	}
+    // special exception for MAX31850
+    if ((scratchPad[CONFIGURATION] & 0xF0) == 0xF0) 
+      return 12;
   }
   return 0;
 }
@@ -415,6 +421,13 @@ float DallasTemperature::calculateTemperature(uint8_t* deviceAddress, uint8_t* s
 
   switch (deviceAddress[0])
   {
+    case MAX31850MODEL:
+      if (scratchPad[0] & 0x1) {
+	return NAN;
+      } else {
+	return (float)rawTemperature * 0.0625;
+      }
+      break;
     case DS18B20MODEL:
     case DS1822MODEL:
       switch (scratchPad[CONFIGURATION])
